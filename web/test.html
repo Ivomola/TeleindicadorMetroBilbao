@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- Include eel.js - note this file doesn't exist in the 'web' directory -->
+        <script type="text/javascript" src="/eel.js"></script>
+        <script type="text/javascript">
+        say_hello_js("Javascript World!");
+        eel.say_hello_py("Javascript World!");  // Call a Python function
+        </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;600;700;800&display=swap');
+        * {
+    font-family: 'Montserrat', sans-serif;
+}
+
+body {
+    border: 35px black solid;
+    border-radius: 25px;
+    padding: 5px 0;
+    border-left-width: 100px;
+    border-right-width: 100px;
+}
+
+.heading {
+    padding: 0 5px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.clock {
+    background-color: black;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    padding: 0 5px;
+    margin: 0;
+    height: fit-content;
+}
+
+.clock * {
+    font-size: min(2.5vw, 32pt);
+    margin: 0;
+    padding: 0;
+    letter-spacing: 2px;
+    font-weight: 600;
+
+}
+
+.logo img {
+    max-width: 40%;
+    min-width: 30%;
+}
+
+.timetable {
+    padding: 2vw 0 0 1vh;
+    align-items: center;
+    justify-content: space-between;
+    display: flex;
+}
+
+.platform {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    padding: 0 5px;
+}
+
+.platform.one {
+    border-right: 2px black solid;
+}
+
+.train {
+    justify-content: space-between;
+    font-size: min(3vw, 32pt);
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.blink {
+        animation: blink-animation 2s steps(2, start) infinite;
+      }
+      @keyframes blink-animation {
+        to {
+          visibility: hidden;
+        }
+      }
+
+        </style>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teleindicador</title>
+</head>
+<body>
+    <div class="heading">
+        <div class="logo"><img src="https://www.metrobilbao.eus/_next/static/images/mb-logo-837f3ff4e23640a1d49b8de0f8026b0a.png" alt="MB Logo"></div>
+        <div class="clock"><p>15:55</p></div>
+    </div>
+    <div class="timetable">
+        <div class="platform one">
+            <div class="train one">
+                <div class="destination">ECHEBARRI</div><div class="time">5</div>
+            </div>
+            <div class="train two">
+                <div class="destination">LARRABAST.</div><div class="time">15</div>
+            </div>
+        </div>
+        <div class="platform two">
+            <div class="train one blink">
+                <div class="destination">PLENCIA</div><div class="time"></div>
+            </div>
+            <div class="train two">
+                <div class="destination">PLENCIA</div><div class="time">20</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <script src="/eel.js"></script>
+    <script>
+        // Función para actualizar el HTML con los datos recibidos desde Python
+        eel.expose(updateHTML);
+        function updateHTML(html) {
+            document.body.innerHTML = html;
+        }
+
+        eel.expose(updateTimetable);
+        function updateTimetable(newTimetable) {
+            document.getElementById("timetable_container").innerHTML = newTimetable;
+        }
+
+        eel.expose(getTrainTime);
+        function getTrainTime(tIndex) {
+            return document.getElementById(tIndex).getElementsByClassName("time")[0].innerHTML;
+        }
+
+        eel.expose(getTrainDestination);
+        function getTrainDestination(dIndex) {
+            return document.getElementById(dIndex).getElementsByClassName("destination")[0].innerHTML;
+        }
+
+
+        eel.expose(updateTrainTime);
+        function updateTrainTime(trainId, newTime) {
+            document.getElementById(trainId).getElementsByClassName("time")[0].textContent = newTime;
+        }
+
+        // Función para actualizar el reloj en el HTML
+        eel.expose(updateTime);
+        function updateTime(time) {
+            document.getElementById('clock').textContent = time;
+        }
+
+        // Llamar a la función de Python para obtener los datos actualizados
+        setInterval(() => {
+            eel.update_timetable();
+        }, 10000);
+
+        // Llamar a la función de Python para obtener la hora actual
+        setInterval(() => {
+            eel.get_current_time();
+        }, 1000);
+    </script>
+    <meta charset="UTF-8">
+    <title>Teleindicador</title>
+</head>
+<body>
+
+</body>
+</html>
