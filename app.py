@@ -1,115 +1,132 @@
-import sys
+from dataclasses import dataclass
+from typing import List
+import time
 import eel
 import jinja2 as jinja
 import requests
-import time
-import inflect
 
-
-# Declarar Inflect
-
-def get_train_index(number):
-    train_index = inflect.engine().number_to_words(number)
-    return train_index
-
-
-# Configuración de Eel
-eel.init('web')
-
-# URL de la API y configuración de la estación
 api_url = 'https://api.metrobilbao.eus/api/stations/'
-station = 'SIN'
+station_header = 'SIN'
 fetch_headers = {'accept': 'application/ld+json'}
-
-# Ruta al archivo de plantilla HTML
+eel.init('web')
 template_file = 'web/jinja2/template.html'
 timetable_file = 'web/jinja2/timetable.html'
+last_platform_data: str = ""
 
 
-# Renderizar la plantilla HTML con los datos iniciales
-def render_html(platforms_template, station_name):
-    template_loader = jinja.FileSystemLoader(searchpath="./")
-    template_env = jinja.Environment(loader=template_loader)
-    template = template_env.get_template(template_file)
-    rendered_html = template.render(platforms=platforms_template, index=get_train_index, name=station_name)
-    return rendered_html
+@dataclass
+class Train:
+    destination: str
+    minutes: int
+    length: int
+    time: str
+    line: str
+    direction: str = None
 
 
-# Función para obtener los datos actualizados y renderizar el HTML
+@dataclass
+class Track:
+    trains: List[Train]
+
+
+@dataclass
+class TrainStation:
+    station_id: str
+    station: str
+    entrances: str
+    tracks: List[Track]
+    error: str = None
+
+
+def html_id_assigner(platform, train):
+    return f"p{platform}t{train}"
+
+
 @eel.expose
-def update_data():
-    try:
-        # Obtener los datos JSON de la API
-        data = requests.get(f"{api_url}{station}", headers=fetch_headers).json()
-        platforms_data = data['platforms']['Platforms']
-        station_friendly_name = data["Name"]
-    except KeyError:
-        try:
-            data = requests.get(f"{api_url}{station}", headers=fetch_headers).json()
-            station_friendly_name = data['name']
-            html = render_html('no_trains', station_friendly_name)
-            eel.updateHTML(html)
-
-        except KeyError:
-            station_friendly_name = 'Error'
-            platforms_data = 'La estación no existe'
-            html = render_html(platforms_data, station_friendly_name)
-            eel.updateHTML(html)
+def timetable_updater():
+    global last_platform_data
+    local_last_platform_data = last_platform_data
+    local_current_platform_data = get_timetable_data()
+    print(local_current_platform_data)
+    for track_index, track in enumerate(range(len(local_current_platform_data.tracks))):
+        last_track_data = local_last_platform_data.tracks[track]
+        current_track_data = local_current_platform_data.tracks[track]
+        for train_index, train in enumerate(range(len(current_track_data.trains))):
+            id_to_update = html_id_assigner(track_index, train_index)
+            if last_track_data.trains[train] != current_track_data.trains[train]:
+                html_update = render_timetable_update(current_track_data.trains[train], id_to_update)
+                eel.updateTrain(id_to_update, html_update)
+            else:
+                continue
 
 
-    else:
+def get_timetable_data():
+    # Obtener los datos JSON de la API
+    station_data = requests.get(f"{api_url}{station_header}", headers=fetch_headers).json()
+    current_platform_data = get_timetable(station_data)
+    timetable_data_storer(current_platform_data)
+    return current_platform_data
+    # tracks = timetable_data.track
+    # trains = tracks[track_no].train
+    # train_info = trains[train_no]
+    # return train_info
 
-        # Renderizar el HTML con los nuevos datos
-        html = render_html(platforms_data, station_friendly_name)
 
-        # Devolver el HTML actualizado al frontend
-        eel.updateHTML(html)
+def timetable_data_storer(current_platform_data):
+    global last_platform_data
+    last_platform_data = current_platform_data
 
 
-# Función para obtener la hora actual y enviarla al frontend
+def get_timetable(station_data):
+    current_timetable = station_data['platforms']
+    station = TrainStation(
+        station_id=current_timetable["StationId"],
+        station=current_timetable["Station"],
+        entrances=current_timetable["Entrances"],
+        tracks=[
+            Track(trains=[
+                Train(
+                    destination=train_data["Destination"],
+                    minutes=train_data["Minutes"],
+                    length=train_data["Length"],
+                    time=train_data["Time"],
+                    line=train_data["line"],
+                    direction=train_data.get("Direction")
+                )
+                for train_data in track_data
+            ])
+            for track_data in current_timetable["Platforms"]
+        ]
+    )
+    return station
+
+
+print(get_timetable_data())
+
+
 @eel.expose
 def get_current_time():
     current_time = time.strftime("%H:%M", time.localtime())
     eel.updateTime(current_time)
 
 
-def render_timetable_update(platform_data):
-    with open(timetable_file, 'r') as file:
+@eel.expose
+def render_html():
+    template_loader = jinja.FileSystemLoader(searchpath="./")
+    template_env = jinja.Environment(loader=template_loader)
+    template = template_env.get_template(template_file)
+    rendered_html = template.render(platforms=get_timetable_data, index=html_id_assigner)
+    eel.updateHTML(rendered_html)
+
+
+def render_timetable_update(platform_data, html_id):
+    with open("web/jinja2/train.html", 'r') as file:
         template_content = file.read()
         template = jinja.Template(template_content)
-        rendered_html = template.render(platforms=platform_data, index=get_train_index)
+        rendered_html = template.render(Train=platform_data, index=html_id)
         return rendered_html
 
 
-@eel.expose
-def update_timetable():
-    updated_data = requests.get(f"{api_url}{station}", headers=fetch_headers).json()
-    updated_platform_data = updated_data['platforms']['Platforms']
-    for track_count, track in enumerate(range(len(updated_platform_data))):
-        for train_count, train in enumerate(range(len(updated_platform_data[track_count]))):
-            print(get_train_index(track_count * 2 + train_count + 1))
-            current_destination = eel.getTrainDestination(get_train_index(track_count * 2 + train_count + 1))()
-            updated_destination = updated_platform_data[track_count][train_count]["Destination"]
-            current_time = eel.getTrainTime(get_train_index(track_count * 2 + train_count + 1))()
-            updated_time = updated_platform_data[track_count][train_count]["Minutes"]
-            if current_destination != updated_destination:
-                updated_timetable = render_timetable_update(updated_platform_data)
-                eel.updateTimetable(updated_timetable)
-            elif updated_time != current_time:
-                if current_time == '':
-                    updated_timetable = render_timetable_update(updated_platform_data)
-                    eel.updateTimetable(updated_timetable)
-                elif updated_time == 0:
-                    # Renderizar el HTML con los nuevos datos
-                    updated_timetable = render_timetable_update(updated_platform_data)
-                    eel.updateTimetable(updated_timetable)
-                else:
-                    eel.updateTrainTime(get_train_index(track_count * 2 + train_count + 1), updated_time)
-            else:
-                continue
-
-
-# Definir la configuración de Eel
 eel_kwargs = {
     'mode': 'chrome',  # Modo de la aplicación (puede ser "chrome" o "edge")
     'host': 'localhost',
@@ -117,10 +134,8 @@ eel_kwargs = {
     'size': (800, 400)  # Tamaño de la ventana de la aplicación
 }
 
-# Iniciar la aplicación Eel
-if __name__ == '__main__':
-    # Obtener los datos iniciales y renderizar el HTML
-    update_data()
+get_timetable_data()
 
+if __name__ == '__main__':
     # Iniciar la aplicación Eel
     eel.start('main.html', jinja_templates='jinja2', options=eel_kwargs, suppress_error=True)

@@ -1,16 +1,10 @@
     <div class="timetable">
-        {% for platform in platforms %}
+        {% for Track in platforms().tracks %}
         {% set outer_loop = loop %}
         <div class="platform">
-            {% for train in platform %}
-            <div class="train" id="{{index(loop.index) if outer_loop.index == 1 else index(outer_loop.index * 2 + loop.index - 2)}}">
-                {% if train.Minutes == 0 %}
-                    <div class="destination blink">{{ train.Destination }}</div>
-                    <div class="time"></div>
-                {% else %}
-                    <div class="destination">{{ train.Destination }}</div>
-                    <div class="time">{{ train.Minutes }}</div>
-                {% endif %}
+            {% for Train in Track.trains %}
+            <div class="train" id="{{index(outer_loop.index0, loop.index0)}}">
+                {% include "web/jinja2/train.html" %}
             </div>
             {% endfor %}
         </div>

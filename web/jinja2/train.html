@@ -1,0 +1,10 @@
+
+{% if Train.minutes == 0 %}
+    <div class="destination blink">{{ Train.destination }}</div>
+    {% if Train.length == 5 %}<div class="five_coach">(5)</div>{% endif %}
+    <div class="time"></div>
+{% else %}
+    <div class="destination">{{ Train.destination }}</div>
+    {% if Train.length == 5 %}<div class="five_coach">(5)</div>{% endif %}
+    <div class="time">{{ Train.minutes }}</div>
+{% endif %}

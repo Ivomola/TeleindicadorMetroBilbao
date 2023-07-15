@@ -9,14 +9,13 @@
             document.body.innerHTML = html;
         }
 
+        window.onload = function() {
+            eel.render_html();
+        };
+
         eel.expose(updateTimetable);
         function updateTimetable(newTimetable) {
             document.getElementById("timetable_container").innerHTML = newTimetable;
-        }
-
-        eel.expose(getTrainTime);
-        function getTrainTime(tIndex) {
-            return document.getElementById(tIndex).getElementsByClassName("time")[0].innerHTML;
         }
 
         eel.expose(getTrainDestination);
@@ -25,9 +24,9 @@
         }
 
 
-        eel.expose(updateTrainTime);
-        function updateTrainTime(trainId, newTime) {
-            document.getElementById(trainId).getElementsByClassName("time")[0].textContent = newTime;
+        eel.expose(updateTrain);
+        function updateTrain(trainID, trainHTML) {
+            document.getElementById(trainID).innerHTML = trainHTML;
         }
 
         // Función para actualizar el reloj en el HTML
@@ -38,8 +37,8 @@
 
         // Llamar a la función de Python para obtener los datos actualizados
         setInterval(() => {
-            eel.update_timetable();
-        }, 10000);
+            eel.timetable_updater();
+        }, 5000);
 
         // Llamar a la función de Python para obtener la hora actual
         setInterval(() => {
